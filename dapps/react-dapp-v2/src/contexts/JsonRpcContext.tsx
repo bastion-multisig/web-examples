@@ -10,7 +10,13 @@ import {
   verifyDirectSignature,
 } from "cosmos-wallet";
 import bs58 from "bs58";
-import { verifyMessageSignature } from "solana-wallet";
+import {
+  deserialiseTransaction,
+  deserializeAllTransactions,
+  serialiseTransaction,
+  serializeAllTransactions,
+  verifyMessageSignature,
+} from "solana-wallet";
 import {
   clusterApiUrl,
   Connection,
@@ -56,6 +62,7 @@ interface IContext {
   solanaRpc: {
     testSignMessage: TRpcRequestCallback;
     testSignTransaction: TRpcRequestCallback;
+    testSignAllTransactions: TRpcRequestCallback;
   };
   rpcResult?: IFormattedRpcResponse | null;
   isRpcRequestPending: boolean;
@@ -440,9 +447,7 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
 
         const connection = new Connection(clusterApiUrl(isTestnet ? "testnet" : "mainnet-beta"));
 
-        // Using deprecated `getRecentBlockhash` over `getLatestBlockhash` here, since `mainnet-beta`
-        // cluster only seems to support `connection.getRecentBlockhash` currently.
-        const { blockhash } = await connection.getRecentBlockhash();
+        const { blockhash } = await connection.getLatestBlockhash();
 
         const transaction = new SolanaTransaction({
           feePayer: senderPublicKey,
@@ -454,39 +459,84 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
             lamports: 1,
           }),
         );
+        const params = serialiseTransaction(transaction);
 
         try {
-          const { signature } = await client!.request({
+          const result = await client!.request({
             topic: session!.topic,
             request: {
               method: DEFAULT_SOLANA_METHODS.SOL_SIGN_TRANSACTION,
-              params: {
-                feePayer: transaction.feePayer!.toBase58(),
-                recentBlockhash: transaction.recentBlockhash,
-                instructions: transaction.instructions.map(i => ({
-                  programId: i.programId.toBase58(),
-                  data: bs58.encode(i.data),
-                  keys: i.keys.map(k => ({
-                    isSigner: k.isSigner,
-                    isWritable: k.isWritable,
-                    pubkey: k.pubkey.toBase58(),
-                  })),
-                })),
-              },
+              params,
             },
           });
-
-          // We only need `Buffer.from` here to satisfy the `Buffer` param type for `addSignature`.
-          // The resulting `UInt8Array` is equivalent to just `bs58.decode(...)`.
-          transaction.addSignature(senderPublicKey, Buffer.from(bs58.decode(signature)));
-
-          const valid = transaction.verifySignatures();
+          const signed = deserialiseTransaction(result);
+          const valid = signed.verifySignatures();
 
           return {
             method: DEFAULT_SOLANA_METHODS.SOL_SIGN_TRANSACTION,
             address,
             valid,
-            result: signature,
+            result: JSON.stringify(result, undefined, 2),
+          };
+        } catch (error: any) {
+          console.log(error);
+          throw new Error(error);
+        }
+      },
+    ),
+    testSignAllTransactions: _createJsonRpcRequestHandler(
+      async (chainId: string, address: string): Promise<IFormattedRpcResponse> => {
+        if (!solanaPublicKeys) {
+          throw new Error("Could not find Solana PublicKeys.");
+        }
+
+        const senderPublicKey = solanaPublicKeys[address];
+
+        const connection = new Connection(clusterApiUrl(isTestnet ? "testnet" : "mainnet-beta"));
+
+        const { blockhash } = await connection.getLatestBlockhash();
+
+        const transactions = [
+          new SolanaTransaction({
+            feePayer: senderPublicKey,
+            recentBlockhash: blockhash,
+          }).add(
+            SystemProgram.transfer({
+              fromPubkey: senderPublicKey,
+              toPubkey: Keypair.generate().publicKey,
+              lamports: 1,
+            }),
+          ),
+          new SolanaTransaction({
+            feePayer: senderPublicKey,
+            recentBlockhash: blockhash,
+          }).add(
+            SystemProgram.transfer({
+              fromPubkey: senderPublicKey,
+              toPubkey: Keypair.generate().publicKey,
+              lamports: 2,
+            }),
+          ),
+        ];
+        const params = serializeAllTransactions(transactions);
+
+        try {
+          const result = await client!.request({
+            topic: session!.topic,
+            request: {
+              method: DEFAULT_SOLANA_METHODS.SOL_SIGN_ALL_TRANSACTIONS,
+              params,
+            },
+          });
+          const signed = deserializeAllTransactions(result);
+
+          const valid = signed.every(tx => tx.verifySignatures());
+
+          return {
+            method: DEFAULT_SOLANA_METHODS.SOL_SIGN_TRANSACTION,
+            address,
+            valid,
+            result: JSON.stringify(result, undefined, 2),
           };
         } catch (error: any) {
           throw new Error(error);

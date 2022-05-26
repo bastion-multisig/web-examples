@@ -41,6 +41,7 @@ export enum DEFAULT_COSMOS_METHODS {
 
 export enum DEFAULT_SOLANA_METHODS {
   SOL_SIGN_TRANSACTION = "solana_signTransaction",
+  SOL_SIGN_ALL_TRANSACTIONS = "solana_signAllTransactions",
   SOL_SIGN_MESSAGE = "solana_signMessage",
 }
 

@@ -143,12 +143,17 @@ export default function App() {
       openRequestModal();
       await solanaRpc.testSignTransaction(chainId, address);
     };
+    const onSignAllTransactions = async (chainId: string, address: string) => {
+      openRequestModal();
+      await solanaRpc.testSignAllTransactions(chainId, address);
+    };
     const onSignMessage = async (chainId: string, address: string) => {
       openRequestModal();
       await solanaRpc.testSignMessage(chainId, address);
     };
     return [
       { method: DEFAULT_SOLANA_METHODS.SOL_SIGN_TRANSACTION, callback: onSignTransaction },
+      { method: DEFAULT_SOLANA_METHODS.SOL_SIGN_ALL_TRANSACTIONS, callback: onSignAllTransactions },
       { method: DEFAULT_SOLANA_METHODS.SOL_SIGN_MESSAGE, callback: onSignMessage },
     ];
   };
