@@ -15,13 +15,12 @@ export async function approveSolanaRequest(requestEvent: RequestEvent) {
       return formatJsonRpcResult(id, signedMessage)
 
     case SOLANA_SIGNING_METHODS.SOLANA_SIGN_TRANSACTION:
-      const signedTransaction = await wallet.signTransaction(
-        params.feePayer,
-        params.recentBlockhash,
-        params.instructions
-      )
-
+      const signedTransaction = await wallet.signTransaction(params)
       return formatJsonRpcResult(id, signedTransaction)
+
+    case SOLANA_SIGNING_METHODS.SOLANA_SIGN_ALL_TRANSACTIONS:
+      const signedTransactions = await wallet.signAllTransactions(params)
+      return formatJsonRpcResult(id, signedTransactions)
 
     default:
       throw new Error(ERROR.UNKNOWN_JSONRPC_METHOD.format().message)

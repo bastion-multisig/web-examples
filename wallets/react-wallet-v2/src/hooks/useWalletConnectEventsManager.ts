@@ -48,6 +48,7 @@ export default function useWalletConnectEventsManager(initialized: boolean) {
 
       case SOLANA_SIGNING_METHODS.SOLANA_SIGN_MESSAGE:
       case SOLANA_SIGNING_METHODS.SOLANA_SIGN_TRANSACTION:
+      case SOLANA_SIGNING_METHODS.SOLANA_SIGN_ALL_TRANSACTIONS:
         return ModalStore.open('SessionSignSolanaModal', { requestEvent, requestSession })
 
       default:

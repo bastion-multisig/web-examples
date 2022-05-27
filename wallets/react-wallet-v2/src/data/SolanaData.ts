@@ -33,5 +33,6 @@ export const SOLANA_CHAINS = { ...SOLANA_MAINNET_CHAINS, ...SOLANA_TEST_CHAINS }
  */
 export const SOLANA_SIGNING_METHODS = {
   SOLANA_SIGN_TRANSACTION: 'solana_signTransaction',
+  SOLANA_SIGN_ALL_TRANSACTIONS: 'solana_signAllTransactions',
   SOLANA_SIGN_MESSAGE: 'solana_signMessage'
 }

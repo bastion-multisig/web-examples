@@ -1,7 +1,5 @@
 import { Keypair } from '@solana/web3.js'
-import bs58 from 'bs58'
-import nacl from 'tweetnacl'
-import SolanaWallet, { SolanaSignTransaction } from 'solana-wallet'
+import SolanaWallet, { SolanaSignAllTransactions, SolanaSignTransaction } from 'solana-wallet'
 
 /**
  * Types
@@ -37,25 +35,17 @@ export default class SolanaLib {
   }
 
   public async signMessage(message: string) {
-    const signature = nacl.sign.detached(bs58.decode(message), this.keypair.secretKey)
-    const bs58Signature = bs58.encode(signature)
-
-    return { signature: bs58Signature }
+    return await this.solanaWallet.signMessage(this.keypair.publicKey.toBase58(), message)
   }
 
-  public async signTransaction(
-    feePayer: SolanaSignTransaction['feePayer'],
-    recentBlockhash: SolanaSignTransaction['recentBlockhash'],
-    instructions: SolanaSignTransaction['instructions'],
-    partialSignatures?: SolanaSignTransaction['partialSignatures']
-  ) {
-    const { signature } = await this.solanaWallet.signTransaction(feePayer, {
-      feePayer,
-      instructions,
-      recentBlockhash,
-      partialSignatures: partialSignatures ?? []
-    })
+  public async signTransaction(transaction: SolanaSignTransaction) {
+    return await this.solanaWallet.signTransaction(this.keypair.publicKey.toBase58(), transaction)
+  }
 
-    return { signature }
+  public async signAllTransactions(transactions: SolanaSignAllTransactions) {
+    return await this.solanaWallet.signAllTransactions(
+      this.keypair.publicKey.toBase58(),
+      transactions
+    )
   }
 }
