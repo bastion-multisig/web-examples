@@ -445,7 +445,7 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
 
         const senderPublicKey = solanaPublicKeys[address];
 
-        const connection = new Connection(clusterApiUrl(isTestnet ? "testnet" : "mainnet-beta"));
+        const connection = new Connection(clusterApiUrl(isTestnet ? "devnet" : "mainnet-beta"));
 
         const { blockhash } = await connection.getLatestBlockhash();
         const rentExemptMinimum = await connection.getMinimumBalanceForRentExemption(0);
@@ -473,6 +473,9 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
           const signed = deserialiseTransaction(result);
           const valid = signed.verifySignatures();
 
+          const txid = await connection.sendRawTransaction(signed.serialize());
+          await connection.confirmTransaction(txid);
+
           return {
             method: DEFAULT_SOLANA_METHODS.SOL_SIGN_TRANSACTION,
             address,
@@ -493,7 +496,7 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
 
         const senderPublicKey = solanaPublicKeys[address];
 
-        const connection = new Connection(clusterApiUrl(isTestnet ? "testnet" : "mainnet-beta"));
+        const connection = new Connection(clusterApiUrl(isTestnet ? "devnet" : "mainnet-beta"));
 
         const { blockhash } = await connection.getLatestBlockhash();
         const rentExemptMinimum = await connection.getMinimumBalanceForRentExemption(0);
@@ -534,6 +537,11 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
           const signed = deserializeAllTransactions(result);
 
           const valid = signed.every(tx => tx.verifySignatures());
+
+          for (let i = 0; i < signed.length; i++) {
+            const txid = await connection.sendRawTransaction(signed[i].serialize());
+            await connection.confirmTransaction(txid);
+          }
 
           return {
             method: DEFAULT_SOLANA_METHODS.SOL_SIGN_TRANSACTION,
