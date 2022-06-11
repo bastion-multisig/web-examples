@@ -448,6 +448,7 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
         const connection = new Connection(clusterApiUrl(isTestnet ? "testnet" : "mainnet-beta"));
 
         const { blockhash } = await connection.getLatestBlockhash();
+        const rentExemptMinimum = await connection.getMinimumBalanceForRentExemption(0);
 
         const transaction = new SolanaTransaction({
           feePayer: senderPublicKey,
@@ -456,7 +457,7 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
           SystemProgram.transfer({
             fromPubkey: senderPublicKey,
             toPubkey: Keypair.generate().publicKey,
-            lamports: 1,
+            lamports: rentExemptMinimum,
           }),
         );
         const params = serialiseTransaction(transaction);
@@ -495,6 +496,7 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
         const connection = new Connection(clusterApiUrl(isTestnet ? "testnet" : "mainnet-beta"));
 
         const { blockhash } = await connection.getLatestBlockhash();
+        const rentExemptMinimum = await connection.getMinimumBalanceForRentExemption(0);
 
         const transactions = [
           new SolanaTransaction({
@@ -504,7 +506,7 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
             SystemProgram.transfer({
               fromPubkey: senderPublicKey,
               toPubkey: Keypair.generate().publicKey,
-              lamports: 1,
+              lamports: rentExemptMinimum,
             }),
           ),
           new SolanaTransaction({
@@ -514,10 +516,11 @@ export function JsonRpcContextProvider({ children }: { children: ReactNode | Rea
             SystemProgram.transfer({
               fromPubkey: senderPublicKey,
               toPubkey: Keypair.generate().publicKey,
-              lamports: 2,
+              lamports: rentExemptMinimum + 1,
             }),
           ),
         ];
+
         const params = serializeAllTransactions(transactions);
 
         try {
